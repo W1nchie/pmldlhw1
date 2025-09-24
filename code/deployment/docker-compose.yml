@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ../../
+      dockerfile: code/deployment/api/Dockerfile
+    container_name: digit_recognition_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - models:/app/models
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - digit_network
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ../../
+      dockerfile: code/deployment/app/Dockerfile
+    container_name: digit_recognition_app
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+    environment:
+      - API_URL=http://api:8000
+    networks:
+      - digit_network
+    restart: unless-stopped
+
+volumes:
+  models:
+
+networks:
+  digit_network:
+    driver: bridge
