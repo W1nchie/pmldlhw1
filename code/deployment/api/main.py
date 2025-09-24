@@ -11,7 +11,6 @@ import io
 
 app = FastAPI(title="Digit Recognition API", version="1.0.0")
 
-# Load model
 model_path = "./models/digits_model.pkl"
 
 try:
@@ -24,7 +23,6 @@ except FileNotFoundError as e:
 
 
 class Pixels(BaseModel):
-    # Flat list of 64 pixel values (0..16 or 0..255)
     pixels: list
 
 
@@ -34,12 +32,9 @@ class DigitPrediction(BaseModel):
 
 
 def preprocess_image_to_8x8(image_bytes: bytes) -> np.ndarray:
-    """Convert uploaded image bytes to 8x8 grayscale vector of length 64 in [0,16]."""
-    image = Image.open(io.BytesIO(image_bytes)).convert("L")  # grayscale
+    image = Image.open(io.BytesIO(image_bytes)).convert("L")
     image = image.resize((8, 8))
-    arr = np.array(image, dtype=np.float32)  # 0..255
-    # Invert if needed: handwritten digits datasets often white on black; sklearn digits is positive for brighter
-    # Normalize to 0..16 scale expected by sklearn digits
+    arr = np.array(image, dtype=np.float32)
     arr = (arr / 255.0) * 16.0
     return arr.reshape(1, -1)
 
@@ -62,7 +57,6 @@ async def predict_from_pixels(payload: Pixels):
         pixels = np.array(payload.pixels, dtype=np.float32)
         if pixels.size != 64:
             raise ValueError("pixels must contain exactly 64 values for 8x8 image")
-        # If in 0..255 scale, normalize to 0..16
         if pixels.max() > 16.0:
             pixels = (pixels / 255.0) * 16.0
         features = pixels.reshape(1, -1)

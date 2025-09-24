@@ -1,8 +1,3 @@
-"""
-Model Engineering Pipeline using MLflow
-Trains, evaluates, and packages handwritten digit recognition models
-"""
-
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -16,7 +11,6 @@ import json
 from datetime import datetime
 
 def load_processed_data():
-    """Load processed training and test data"""
     print("Loading processed data...")
     
     train_path = '../../data/processed/train_data.csv'
@@ -34,16 +28,13 @@ def load_processed_data():
     return train_data, test_data
 
 def prepare_features(train_data, test_data):
-    """Prepare features for model training"""
     print("Preparing features...")
     
-    # Separate features and target
     X_train = train_data.drop('digit', axis=1)
     y_train = train_data['digit']
     X_test = test_data.drop('digit', axis=1)
     y_test = test_data['digit']
     
-    # Get feature names
     feature_names = list(X_train.columns)
     
     print(f"Features: {feature_names}")
@@ -53,7 +44,6 @@ def prepare_features(train_data, test_data):
     return X_train, X_test, y_train, y_test, feature_names
 
 def train_model(X_train, y_train, params):
-    """Train the model with given parameters"""
     print("Training model...")
     
     model = RandomForestClassifier(
@@ -69,24 +59,18 @@ def train_model(X_train, y_train, params):
     return model
 
 def evaluate_model(model, X_test, y_test):
-    """Evaluate model performance"""
     print("Evaluating model...")
     
-    # Make predictions
     y_pred = model.predict(X_test)
     
-    # Calculate metrics
     accuracy = accuracy_score(y_test, y_pred)
     
-    # Cross-validation score
     cv_scores = cross_val_score(model, X_test, y_test, cv=5)
     cv_mean = cv_scores.mean()
     cv_std = cv_scores.std()
     
-    # Classification report
     report = classification_report(y_test, y_pred, output_dict=True)
     
-    # Confusion matrix
     cm = confusion_matrix(y_test, y_pred)
     
     metrics = {
@@ -104,33 +88,24 @@ def evaluate_model(model, X_test, y_test):
     return metrics, y_pred, report
 
 def log_model_with_mlflow(model, metrics, params, feature_names, X_test, y_test, y_pred):
-    """Log model and metrics to MLflow"""
     print("Logging to MLflow...")
     
-    # Set MLflow tracking URI (local)
     mlflow.set_tracking_uri("file:../../mlruns")
     
     with mlflow.start_run(run_name=f"digit_recognition_model_{datetime.now().strftime('%Y%m%d_%H%M%S')}"):
-        # Log parameters
         mlflow.log_params(params)
-        
-        # Log metrics
         mlflow.log_metrics(metrics)
-        
-        # Log model
         mlflow.sklearn.log_model(
             model, 
             "model",
             registered_model_name="DigitRecognitionModel"
         )
         
-        # Log feature names
         mlflow.log_text(
             json.dumps(feature_names, indent=2), 
             "feature_names.json"
         )
         
-        # Log model info
         model_info = {
             "model_type": "RandomForestClassifier",
             "features": feature_names,
@@ -142,7 +117,6 @@ def log_model_with_mlflow(model, metrics, params, feature_names, X_test, y_test,
             "model_info.json"
         )
         
-        # Log classification report
         report = classification_report(y_test, y_pred, output_dict=True)
         mlflow.log_text(
             json.dumps(report, indent=2), 
@@ -152,21 +126,16 @@ def log_model_with_mlflow(model, metrics, params, feature_names, X_test, y_test,
         print("Model logged to MLflow successfully!")
 
 def save_model_locally(model, feature_names, metrics):
-    """Save model locally for deployment"""
     print("Saving model locally...")
     
-    # Create models directory
     os.makedirs('../../models', exist_ok=True)
     
-    # Save model
     model_path = '../../models/digits_model.pkl'
     joblib.dump(model, model_path)
-    
-    # Save feature names
+
     feature_names_path = '../../models/feature_names.pkl'
     joblib.dump(feature_names, feature_names_path)
-    
-    # Save metrics
+
     metrics_path = '../../models/metrics.json'
     with open(metrics_path, 'w') as f:
         json.dump(metrics, f, indent=2)
@@ -176,16 +145,12 @@ def save_model_locally(model, feature_names, metrics):
     print(f"Metrics saved to: {metrics_path}")
 
 def main():
-    """Main model engineering pipeline function"""
     print("Starting model engineering pipeline...")
     
-    # Load processed data
     train_data, test_data = load_processed_data()
     
-    # Prepare features
     X_train, X_test, y_train, y_test, feature_names = prepare_features(train_data, test_data)
     
-    # Model parameters
     params = {
         'n_estimators': 100,
         'max_depth': 10,
@@ -193,16 +158,12 @@ def main():
         'min_samples_leaf': 1
     }
     
-    # Train model
     model = train_model(X_train, y_train, params)
     
-    # Evaluate model
     metrics, y_pred, report = evaluate_model(model, X_test, y_test)
     
-    # Log to MLflow
     log_model_with_mlflow(model, metrics, params, feature_names, X_test, y_test, y_pred)
     
-    # Save model locally
     save_model_locally(model, feature_names, metrics)
     
     print("Model engineering pipeline completed successfully!")

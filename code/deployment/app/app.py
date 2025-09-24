@@ -8,23 +8,20 @@ import numpy as np
 from PIL import Image, ImageOps
 import io
 
-# Configure page
 st.set_page_config(
     page_title="Digit Recognizer",
     page_icon="🔢",
     layout="centered"
 )
 
-# API URL
 API_URL = "http://api:8000"
 
 
 def to_8x8_vector(image: Image.Image) -> np.ndarray:
-    """Convert a PIL image to a 1x64 vector scaled to [0,16] for sklearn digits."""
     gray = image.convert("L")
-    gray = ImageOps.invert(gray)  # make dark background, bright strokes
+    gray = ImageOps.invert(gray)
     gray = gray.resize((8, 8))
-    arr = np.array(gray, dtype=np.float32)  # 0..255
+    arr = np.array(gray, dtype=np.float32)
     arr = (arr / 255.0) * 16.0
     return arr.reshape(1, -1)
 
@@ -33,20 +30,18 @@ def main():
     st.title("🔢 Handwritten Digit Recognizer")
     st.markdown("Upload a digit image or draw one to get a prediction.")
 
-    # Check API health
     try:
         response = requests.get(f"{API_URL}/health", timeout=5)
         if response.status_code == 200:
-            st.success("✅ API is running and healthy")
+            st.success("API is running and healthy")
         else:
-            st.error("❌ API is not responding properly")
+            st.error("API is not responding properly")
             return
     except requests.exceptions.RequestException:
-        st.error("❌ Cannot connect to API. Make sure the API container is running.")
+        st.error("Cannot connect to API. Make sure the API container is running.")
         return
 
-    # Upload section
-    st.header("📤 Upload Image")
+    st.header("Upload Image")
     uploaded_file = st.file_uploader("Upload a digit image (PNG/JPG)", type=["png", "jpg", "jpeg"])
 
     vector = None
@@ -57,32 +52,27 @@ def main():
         preview = image.copy()
         vector = to_8x8_vector(image)
 
-    # Optional: Simple canvas substitute using file upload only (no drawing widget dependency)
-
-    # Predict button
-    if st.button("🔮 Predict Digit", use_container_width=True):
+    if st.button("Predict Digit", use_container_width=True):
         if vector is None:
             st.warning("Please upload an image first.")
         else:
-            # Show preview
             st.image(preview, caption="Uploaded Image", width=200)
-            # Call API via pixels endpoint
             payload = {"pixels": vector.flatten().tolist()}
             with st.spinner("Making prediction..."):
                 try:
                     res = requests.post(f"{API_URL}/predict_pixels", json=payload, timeout=10)
                     if res.status_code == 200:
                         result = res.json()
-                        st.success("✅ Prediction completed!")
+                        st.success("Prediction completed!")
                         st.metric("Predicted Digit", result["prediction"])
                         st.metric("Confidence", f"{result['confidence']:.1%}")
                     else:
-                        st.error(f"❌ API Error: {res.status_code}")
+                        st.error(f"API Error: {res.status_code}")
                         st.error(res.text)
                 except requests.exceptions.RequestException as e:
-                    st.error(f"❌ Connection Error: {str(e)}")
+                    st.error(f"Connection Error: {str(e)}")
 
-    with st.expander("ℹ️ About this App"):
+    with st.expander("About this App"):
         st.markdown(
             """
             This app recognizes handwritten digits using a Support Vector Classifier

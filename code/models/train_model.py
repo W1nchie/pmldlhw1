@@ -1,8 +1,3 @@
-"""
-Model training script for Handwritten Digit Recognition
-Uses scikit-learn Digits dataset (8x8) and SVC classifier
-"""
-
 import os
 import joblib
 from sklearn import datasets
@@ -12,10 +7,9 @@ from sklearn.svm import SVC
 
 
 def train_model():
-    """Train a classifier on the sklearn digits dataset"""
     print("Loading digits dataset...")
     digits = datasets.load_digits()
-    X = digits.data  # shape (n_samples, 64) with values in [0, 16]
+    X = digits.data
     y = digits.target
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -32,7 +26,6 @@ def train_model():
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred))
 
-    # Save model
     os.makedirs('../../models', exist_ok=True)
     model_path = '../../models/digits_model.pkl'
     joblib.dump(model, model_path)
